@@ -6,7 +6,7 @@ import os
 # Database connection URL from environment variable
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@db:5432/app_start_db"
+    "postgresql://postgres:postgres@db:5432/advox_krs_db"
 )
 
 # Create SQLAlchemy engine

@@ -1,4 +1,4 @@
-# App Start - Authentication Template
+# advox_krs - Authentication Template
 
 Minimalna aplikacja z funkcjonalnością logowania jako podstawa dla wielu innych projektów.
 
@@ -44,7 +44,7 @@ Aplikacja zawiera tylko niezbędne komponenty do autentykacji użytkowników:
 ### 1. Klonowanie/Przejście do katalogu projektu
 
 ```bash
-cd /home/lkasztelan/projekty/app_start
+cd /home/lkasztelan/projekty/advox_krs
 ```
 
 ### 2. Uruchomienie aplikacji
@@ -57,16 +57,16 @@ Pierwsze uruchomienie może potrwać kilka minut (pobieranie obrazów, instalacj
 
 ### 3. Dostęp do aplikacji
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Documentation (Swagger)**: http://localhost:8000/docs
+- **Frontend**: http://localhost:3001
+- **Backend API**: http://localhost:8001
+- **API Documentation (Swagger)**: http://localhost:8001/docs
 - **PostgreSQL**: localhost:5432
 
 ## 📝 Użytkowanie
 
 ### Rejestracja nowego użytkownika
 
-1. Otwórz http://localhost:3000
+1. Otwórz http://localhost:3001
 2. Kliknij "Zarejestruj się" / "Sign Up"
 3. Wypełnij formularz:
    - Username (unikalna nazwa użytkownika)
@@ -97,7 +97,7 @@ Użyj przełącznika EN/PL w prawym górnym rogu aplikacji.
 ## 🗂️ Struktura Projektu
 
 ```
-app_start/
+advox_krs/
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -142,7 +142,7 @@ cp .env.example .env
 Domyślne wartości:
 - `POSTGRES_USER=postgres`
 - `POSTGRES_PASSWORD=postgres`
-- `POSTGRES_DB=app_start_db`
+- `POSTGRES_DB=advox_krs_db`
 - `SECRET_KEY=your-secret-key-change-in-production-please`
 
 **WAŻNE**: Zmień `SECRET_KEY` w środowisku produkcyjnym!
@@ -193,12 +193,12 @@ docker-compose down -v --rmi all
 
 ### Port już zajęty
 
-Jeśli porty 3000, 8000 lub 5432 są zajęte, zmień je w `docker-compose.yml`:
+Jeśli porty 3001, 8001 lub 5432 są zajęte, zmień je w `docker-compose.yml`:
 
 ```yaml
 ports:
-  - "3001:80"    # Frontend (zmień 3000 na 3001)
-  - "8001:8000"  # Backend (zmień 8000 na 8001)
+  - "3002:80"    # Frontend (zmień 3001 na 3002, jeśli 3001 też jest zajęty)
+  - "8002:8000"  # Backend (zmień 8001 na 8002, jeśli 8001 też jest zajęty)
   - "5433:5432"  # PostgreSQL (zmień 5432 na 5433)
 ```
 
