@@ -13,6 +13,24 @@ function parseKrsList(value) {
     )];
 }
 
+function getErrorMessage(err) {
+    const detail = err.response?.data?.detail;
+
+    if (typeof detail === 'string') {
+        return detail;
+    }
+
+    if (detail?.message && detail?.rejestrio) {
+        return `${detail.message}: ${JSON.stringify(detail.rejestrio)}`;
+    }
+
+    if (detail) {
+        return JSON.stringify(detail);
+    }
+
+    return 'Nie udało się pobrać danych z Rejestr.io.';
+}
+
 function Dashboard() {
     const { t } = useTranslation();
     const [user, setUser] = useState(null);
@@ -111,23 +129,34 @@ function Dashboard() {
                 setResultJson(JSON.stringify(response, null, 2));
             } else {
                 const responses = [];
+                const failures = [];
 
                 for (const singleKrs of krsList) {
-                    const response = await rejestrioAPI.fetchCompany(singleKrs);
-                    responses.push(response);
+                    try {
+                        const response = await rejestrioAPI.fetchCompany(singleKrs);
+                        responses.push(response);
+                    } catch (err) {
+                        failures.push({
+                            krs: singleKrs,
+                            error: getErrorMessage(err),
+                        });
+                    }
                 }
 
-                setResultJson(JSON.stringify(responses, null, 2));
+                setResultJson(JSON.stringify({
+                    organizations: responses,
+                    errors: failures,
+                }, null, 2));
+
+                if (failures.length > 0) {
+                    setFetchError(
+                        `Pobrano ${responses.length} z ${krsList.length} rekordów. ` +
+                        `Błędy dla ${failures.length} KRS są pokazane niżej w JSON.`
+                    );
+                }
             }
         } catch (err) {
-            const detail = err.response?.data?.detail;
-            if (typeof detail === 'string') {
-                setFetchError(detail);
-            } else if (detail) {
-                setFetchError(JSON.stringify(detail, null, 2));
-            } else {
-                setFetchError('Nie udało się pobrać danych z Rejestr.io.');
-            }
+            setFetchError(getErrorMessage(err));
         } finally {
             setFetchLoading(false);
         }
@@ -158,9 +187,25 @@ function Dashboard() {
     };
 
     const handleExportCsv = async () => {
+        await downloadExportFile(
+            rejestrioAPI.getSavedOrganizationsCsvUrl(),
+            'advox_krs_organizations.csv',
+            'Nie udało się wyeksportować CSV.'
+        );
+    };
+
+    const handleExportXlsx = async () => {
+        await downloadExportFile(
+            rejestrioAPI.getSavedOrganizationsXlsxUrl(),
+            'advox_krs_organizations.xlsx',
+            'Nie udało się wyeksportować arkusza.'
+        );
+    };
+
+    const downloadExportFile = async (downloadUrl, filename, errorMessage) => {
         try {
             const token = tokenManager.getToken();
-            const response = await fetch(rejestrioAPI.getSavedOrganizationsCsvUrl(), {
+            const response = await fetch(downloadUrl, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -174,13 +219,13 @@ function Dashboard() {
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'advox_krs_organizations.csv';
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            setSavedOrganizationsError('Nie udało się wyeksportować CSV.');
+            setSavedOrganizationsError(errorMessage);
         }
     };
 
@@ -304,6 +349,13 @@ function Dashboard() {
                                             className="btn-secondary"
                                         >
                                             Export CSV
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleExportXlsx}
+                                            className="btn-secondary"
+                                        >
+                                            Export Arkusz
                                         </button>
                                         {!settingsHasApiKey && (
                                             <span className="text-sm text-amber-700">

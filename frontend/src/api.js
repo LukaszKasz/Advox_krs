@@ -71,6 +71,10 @@ export const rejestrioAPI = {
     getSavedOrganizationsCsvUrl: () => {
         return `${API_BASE_URL}/api/rejestrio/organizations/export`;
     },
+
+    getSavedOrganizationsXlsxUrl: () => {
+        return `${API_BASE_URL}/api/rejestrio/organizations/export/xlsx`;
+    },
 };
 
 // Token management

@@ -8,6 +8,7 @@ from urllib import error, request
 import json
 import csv
 import io
+from openpyxl import Workbook
 
 from database import engine, get_db, Base
 from models import User, AppSetting, AdvoxKrsOrganization
@@ -124,6 +125,22 @@ def serialize_organization_row(organization: AdvoxKrsOrganization) -> dict:
         else:
             serialized[column.name] = value
     return serialized
+
+
+def get_saved_organizations(db: Session) -> list[AdvoxKrsOrganization]:
+    return (
+        db.query(AdvoxKrsOrganization)
+        .order_by(AdvoxKrsOrganization.updated_at.desc())
+        .all()
+    )
+
+
+def build_export_rows(organizations: list[AdvoxKrsOrganization]) -> list[dict]:
+    rows = []
+    for organization in organizations:
+        serialized = serialize_organization_row(organization)
+        rows.append({field: serialized.get(field) for field in CSV_EXPORT_FIELDS})
+    return rows
 
 
 CSV_EXPORT_FIELDS = [
@@ -465,11 +482,7 @@ def list_saved_organizations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    organizations = (
-        db.query(AdvoxKrsOrganization)
-        .order_by(AdvoxKrsOrganization.updated_at.desc())
-        .all()
-    )
+    organizations = get_saved_organizations(db)
 
     return [serialize_organization_row(organization) for organization in organizations]
 
@@ -479,11 +492,8 @@ def export_saved_organizations_csv(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    organizations = (
-        db.query(AdvoxKrsOrganization)
-        .order_by(AdvoxKrsOrganization.updated_at.desc())
-        .all()
-    )
+    organizations = get_saved_organizations(db)
+    export_rows = build_export_rows(organizations)
 
     output = io.StringIO()
     writer = csv.DictWriter(
@@ -492,15 +502,42 @@ def export_saved_organizations_csv(
     )
     writer.writeheader()
 
-    for organization in organizations:
-        serialized = serialize_organization_row(organization)
-        writer.writerow({field: serialized.get(field) for field in CSV_EXPORT_FIELDS})
+    for row in export_rows:
+        writer.writerow(row)
 
     return Response(
         content=output.getvalue(),
         media_type="text/csv; charset=utf-8",
         headers={
             "Content-Disposition": 'attachment; filename="advox_krs_organizations.csv"'
+        },
+    )
+
+
+@app.get("/api/rejestrio/organizations/export/xlsx")
+def export_saved_organizations_xlsx(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    organizations = get_saved_organizations(db)
+    export_rows = build_export_rows(organizations)
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Organizations"
+    sheet.append(CSV_EXPORT_FIELDS)
+
+    for row in export_rows:
+        sheet.append([row.get(field) for field in CSV_EXPORT_FIELDS])
+
+    output = io.BytesIO()
+    workbook.save(output)
+
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": 'attachment; filename="advox_krs_organizations.xlsx"'
         },
     )
 
